@@ -1,37 +1,35 @@
 package jobshop.encodings;
 
-import jobshop.Encoding;
-import jobshop.Instance;
-import jobshop.Schedule;
-
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.stream.IntStream;
 
+import jobshop.Encoding;
+import jobshop.Instance;
+import jobshop.Schedule;
+
+
 public class ResourceOrder extends Encoding {
-
-    // for each machine m, taskByMachine[m] is an array of tasks to be
-    // executed on this machine in the same order
-    public final Task[][] tasksByMachine;
-
-    // for each machine, indicate on many tasks have been initialized
-    public final int[] nextFreeSlot;
-
-    /** Creates a new empty resource order. */
-    public ResourceOrder(Instance instance)
-    {
-        super(instance);
-
-        // matrix of null elements (null is the default value of objects)
-        tasksByMachine = new Task[instance.numMachines][instance.numJobs];
-
-        // no task scheduled on any machine (0 is the default value)
+	
+	public final Task[][] tasksByMachine;
+	
+	public final int[] nextFreeSlot;
+	
+	public ResourceOrder(Instance instance) {
+		super(instance);
+		
+		this.tasksByMachine = new Task[instance.numMachines][instance.numJobs];
+		for (int i = 0; i < instance.numMachines; i++) {
+			for (int j = 0; j < instance.numJobs; j++) {
+				this.tasksByMachine[i][j] = new Task(-1,-1);
+			}
+		}
+		
+		// no task scheduled on any machine (0 is the default value)
         nextFreeSlot = new int[instance.numMachines];
-    }
-
-    /** Creates a resource order from a schedule. */
-    public ResourceOrder(Schedule schedule)
-    {
+	}
+	
+	public ResourceOrder(Schedule schedule) {
         super(schedule.pb);
         Instance pb = schedule.pb;
 
@@ -51,9 +49,10 @@ public class ResourceOrder extends Encoding {
             // indicate that all tasks have been initialized for machine m
             nextFreeSlot[m] = instance.numJobs;
         }
-    }
-
-    @Override
+	 }
+	
+	
+	@Override
     public Schedule toSchedule() {
         // indicate for each task that have been scheduled, its start time
         int [][] startTimes = new int [instance.numJobs][instance.numTasks];
@@ -89,7 +88,7 @@ public class ResourceOrder extends Encoding {
 
                 // compute the earliest start time (est) of the task
                 int est = t.task == 0 ? 0 : startTimes[t.job][t.task-1] + instance.duration(t.job, t.task-1);
-                est = Math.max(est, releaseTimeOfMachine[instance.machine(t)]);
+                est = Math.max(est, releaseTimeOfMachine[instance.machine(t.job, t.task)]);
                 startTimes[t.job][t.task] = est;
 
                 // mark the task as scheduled
@@ -105,27 +104,17 @@ public class ResourceOrder extends Encoding {
         // we exited the loop : all tasks have been scheduled successfully
         return new Schedule(instance, startTimes);
     }
-
-    /** Creates an exact copy of this resource order. */
-    public ResourceOrder copy() {
-        return new ResourceOrder(this.toSchedule());
+	
+	@Override
+    public String toString() {
+		String res = "";
+		for (int i = 0; i < this.tasksByMachine.length; i++) {
+			res += "Machine number : " + Integer.toString(i+1) + "\n";
+			for (int j = 0; j < this.tasksByMachine[i].length; j++) {
+				res += "\tUse number " + Integer.toString(j+1) + " : " + this.tasksByMachine[i][j].add_one() + "\n";
+			}
+		}
+        return res;
     }
-
-    @Override
-    public String toString()
-    {
-        StringBuilder s = new StringBuilder();
-        for(int m=0; m < instance.numMachines; m++)
-        {
-            s.append("Machine ").append(m).append(" : ");
-            for(int j=0; j<instance.numJobs; j++)
-            {
-                s.append(tasksByMachine[m][j]).append(" ; ");
-            }
-            s.append("\n");
-        }
-
-        return s.toString();
-    }
-
+	
 }

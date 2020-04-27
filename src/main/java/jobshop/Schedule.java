@@ -1,10 +1,14 @@
 package jobshop;
 
 
-import jobshop.encodings.Task;
-
-import java.util.*;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 import java.util.stream.IntStream;
+
+import jobshop.encodings.Task;
 
 public class Schedule {
     public final Instance pb;
@@ -62,7 +66,7 @@ public class Schedule {
         }
         return max;
     }
-
+    
     public int startTime(Task task) {
         return startTime(task.job, task.task);
     }
@@ -70,7 +74,7 @@ public class Schedule {
     public int endTime(Task task) {
         return startTime(task) + pb.duration(task.job, task.task);
     }
-
+    
     public boolean isCriticalPath(List<Task> path) {
         if(startTime(path.get(0)) != 0) {
             return false;
@@ -131,5 +135,23 @@ public class Schedule {
         }
         assert isCriticalPath(path);
         return path;
+    }
+
+    public Schedule copy() {
+        return new Schedule(this.pb, this.times);
+    }
+    
+    /****************************************************************/
+    /* Implémentation de la méthode toString() de la classe Schedule*/
+    /****************************************************************/
+    public String toString() {
+    	String res = "";
+    	for (int i = 0; i < this.times.length; i++) {
+    		res += "Job " + Integer.toString(i + 1) + " starting times : \n";
+    		for (int j = 0; j < this.times[i].length; j++) {
+    			res += "\tTask " + Integer.toString(j + 1) + " starts at time : " + Integer.toString(this.times[i][j]) + "\n";
+    		}
+    	}
+    	return res;
     }
 }
