@@ -3,12 +3,15 @@ package jobshop;
 import jobshop.encodings.JobNumbers;
 import jobshop.encodings.ResourceOrder;
 import jobshop.encodings.Task;
+import jobshop.solvers.DescentSolver;
 import jobshop.solvers.GreedySolver;
+import jobshop.solvers.DescentSolver.Block;
 import jobshop.solvers.GreedySolver.PriorityESTRule;
 import jobshop.solvers.GreedySolver.PriorityRule;
 
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.List;
 
 public class DebuggingMain {
 
@@ -48,6 +51,26 @@ public class DebuggingMain {
             ro.tasksByMachine[2][1] = new Task(1,2);
             
             System.out.println("RESOURCE ORDER ENCODING:\n" + ro + "\n");
+            
+            System.out.println("---------------------------------------------\n");
+            
+            // load the aaa2 instance
+            Instance instance2 = Instance.fromFile(Paths.get("instances/aaa2"));
+            
+            ResourceOrder ro2 = new ResourceOrder(instance2);
+            ro2.tasksByMachine[0][0] = new Task(2,0); //O7: Job 2, Task 0 (Machine 0)
+            ro2.tasksByMachine[0][1] = new Task(1,1); //O5: Job 1, Task 1 (Machine 0)
+            ro2.tasksByMachine[0][2] = new Task(0,1); //O2: Job 0, Task 1 (Machine 0)
+            ro2.tasksByMachine[1][0] = new Task(1,0); //O4: Job 1, Task 0 (Machine 1)
+            ro2.tasksByMachine[1][1] = new Task(2,1); //O8: Job 2, Task 1 (Machine 1)
+            ro2.tasksByMachine[1][2] = new Task(0,2); //O3: Job 0, Task 2 (Machine 1)
+            ro2.tasksByMachine[2][0] = new Task(2,2); //O9: Job 2, Task 2 (Machine 2)
+            ro2.tasksByMachine[2][1] = new Task(0,0); //O1: Job 0, Task 0 (Machine 2)
+            ro2.tasksByMachine[2][2] = new Task(1,2); //O6: Job 1, Task 2 (Machine 2)
+            
+            System.out.println("RESOURCE ORDER ENCODING:\n" + ro2 + "\n");
+            
+            System.out.println("---------------------------------------------\n");
             
             System.out.println("Default Solver\n");
             sched = ro.toSchedule();
@@ -95,7 +118,8 @@ public class DebuggingMain {
             System.out.println("MAKESPAN: " + sched.makespan());
             
             System.out.println("---------------------------------------------\n");
-            System.out.println("Greedy Solver: EST_SPT\n");
+            System.out.println("Greedy Solver: ic void applyOn(ResourceOrder order) {\r\n" + 
+            		"            throw new UnsupportedOperationException();EST_SPT\n");
             PriorityESTRule EST_LRPT = PriorityESTRule.EST_LRPT;
             Solver solverEST_LRPT = new GreedySolver(EST_SPT);
             Result resultEST_LRPT = solverEST_LRPT.solve(instance, System.currentTimeMillis() + 10);
@@ -104,6 +128,21 @@ public class DebuggingMain {
             System.out.println("SCHEDULE:\n" + sched);
             System.out.println("VALID: " + sched.isValid());
             System.out.println("MAKESPAN: " + sched.makespan());
+            
+            System.out.println("---------------------------------------------\n");
+            System.out.println("Descent Solver: \n");
+            DescentSolver solverDescent = new DescentSolver();
+            List<Block> criticalBlockList = solverDescent.blocksOfCriticalPath(ro2);
+            for(Block b : criticalBlockList) {
+            	System.out.println(b);
+            	//System.out.println(solverDescent.neighbors(b));
+            }
+            /*
+            sched = ro2.toSchedule();
+            
+            System.out.println("SCHEDULE:\n" + sched);
+            System.out.println("VALID: " + sched.isValid());
+            System.out.println("MAKESPAN: " + sched.makespan());*/
             
         } catch (IOException e) {
             e.printStackTrace();
