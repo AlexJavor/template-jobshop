@@ -36,7 +36,7 @@ public final class Task {
 
     @Override
     public String toString() {
-        return "Job " + this.job + " Task " + this.task;
+        return "(" + job +", " + task + '}';
     }
     
     public Task add_one() {

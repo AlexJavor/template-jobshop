@@ -1,14 +1,10 @@
 package jobshop;
 
 
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.IntStream;
-
 import jobshop.encodings.Task;
+
+import java.util.*;
+import java.util.stream.IntStream;
 
 public class Schedule {
     public final Instance pb;
@@ -66,7 +62,7 @@ public class Schedule {
         }
         return max;
     }
-    
+
     public int startTime(Task task) {
         return startTime(task.job, task.task);
     }
@@ -74,7 +70,7 @@ public class Schedule {
     public int endTime(Task task) {
         return startTime(task) + pb.duration(task.job, task.task);
     }
-    
+
     public boolean isCriticalPath(List<Task> path) {
         if(startTime(path.get(0)) != 0) {
             return false;
@@ -136,7 +132,7 @@ public class Schedule {
         assert isCriticalPath(path);
         return path;
     }
-
+    
     public Schedule copy() {
         return new Schedule(this.pb, this.times);
     }

@@ -6,7 +6,6 @@ import jobshop.encodings.JobNumbers;
 import java.util.Optional;
 import java.util.Random;
 
-@SuppressWarnings("unused")
 public class RandomSolver implements Solver {
 
     @Override

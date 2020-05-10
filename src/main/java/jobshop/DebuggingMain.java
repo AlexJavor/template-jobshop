@@ -4,10 +4,12 @@ import jobshop.encodings.JobNumbers;
 import jobshop.encodings.ResourceOrder;
 import jobshop.encodings.Task;
 import jobshop.solvers.DescentSolver;
-import jobshop.solvers.GreedySolver;
 import jobshop.solvers.DescentSolver.Block;
+import jobshop.solvers.DescentSolver.Swap;
+import jobshop.solvers.GreedySolver;
 import jobshop.solvers.GreedySolver.PriorityESTRule;
 import jobshop.solvers.GreedySolver.PriorityRule;
+import jobshop.solvers.TabooSolver;
 
 import java.io.IOException;
 import java.nio.file.Paths;
@@ -26,22 +28,23 @@ public class DebuggingMain {
             //        mais on commençait à compter à 1 ce qui donnait [1 2 2 1 1 2]
             JobNumbers enc = new JobNumbers(instance);
             enc.jobs[enc.nextToSet++] = 0;
+            enc.jobs[enc.nextToSet++] = 1;
+            enc.jobs[enc.nextToSet++] = 1;
             enc.jobs[enc.nextToSet++] = 0;
-            enc.jobs[enc.nextToSet++] = 1;
-            enc.jobs[enc.nextToSet++] = 1;
             enc.jobs[enc.nextToSet++] = 0;
             enc.jobs[enc.nextToSet++] = 1;
 
-            System.out.println("\nJOB NUMBER ENCODING: " + enc + "\n");
+            System.out.println("\nENCODING: " + enc);
 
             Schedule sched = enc.toSchedule();
-            
-            System.out.println("SCHEDULE:\n" + sched);
-            System.out.println("VALID: " + sched.isValid() + "\n");
-            System.out.println("MAKESPAN: " + sched.makespan() + "\n");
+            // TODO: make it print something meaningful
+            // by implementing the toString() method
+            System.out.println("SCHEDULE: " + sched);
+            System.out.println("VALID: " + sched.isValid());
+            System.out.println("MAKESPAN: " + sched.makespan());
             
             System.out.println("---------------------------------------------\n");
-        
+            
             ResourceOrder ro = new ResourceOrder(instance);
             ro.tasksByMachine[0][0] = new Task(0,0);
             ro.tasksByMachine[0][1] = new Task(1,1);
@@ -81,8 +84,8 @@ public class DebuggingMain {
             
             System.out.println("---------------------------------------------\n");
             
-            JobNumbers jo = JobNumbers.fromSchedule(sched);
-            System.out.println("JOB NUMBER ENCODING (FROM_SCHEDULE): " + jo + "\n");
+            /*JobNumbers jo = JobNumbers.fromSchedule(sched);
+            System.out.println("JOB NUMBER ENCODING (FROM_SCHEDULE): " + jo + "\n");*/
             
             System.out.println("---------------------------------------------\n");
             System.out.println("Greedy Solver: STP");
@@ -118,10 +121,9 @@ public class DebuggingMain {
             System.out.println("MAKESPAN: " + sched.makespan());
             
             System.out.println("---------------------------------------------\n");
-            System.out.println("Greedy Solver: ic void applyOn(ResourceOrder order) {\r\n" + 
-            		"            throw new UnsupportedOperationException();EST_SPT\n");
+            System.out.println("Greedy Solver: EST_LRPT\n");
             PriorityESTRule EST_LRPT = PriorityESTRule.EST_LRPT;
-            Solver solverEST_LRPT = new GreedySolver(EST_SPT);
+            Solver solverEST_LRPT = new GreedySolver(EST_LRPT);
             Result resultEST_LRPT = solverEST_LRPT.solve(instance, System.currentTimeMillis() + 10);
             sched = resultEST_LRPT.schedule;
             
@@ -130,20 +132,54 @@ public class DebuggingMain {
             System.out.println("MAKESPAN: " + sched.makespan());
             
             System.out.println("---------------------------------------------\n");
-            System.out.println("Descent Solver: \n");
-            DescentSolver solverDescent = new DescentSolver();
+            System.out.println("Descent Solver: [Executed with EST_LRPT]\n");
+            
+            DescentSolver solverDescent = new DescentSolver(EST_LRPT);
+            
+            
+            System.out.print("****** TEST: blocksOfCriticalPath() ******\n");
+            System.out.print("Number of Jobs     : " + instance2.numJobs + "\n");
+            System.out.print("Number of Tasks    : " + instance2.numTasks + "\n");
+            System.out.print("Number of Machines : " + instance2.numMachines + "\n\n");
+            
+            
+            
             List<Block> criticalBlockList = solverDescent.blocksOfCriticalPath(ro2);
             for(Block b : criticalBlockList) {
             	System.out.println(b);
-            	//System.out.println(solverDescent.neighbors(b));
+            	for(Swap s : solverDescent.neighbors(b)) {
+            		System.out.println(s);
+            	}
             }
-            /*
-            sched = ro2.toSchedule();
+            System.out.print("******************************************\n");
+            
+            
+            Result resultDescent = solverDescent.solve(instance2, System.currentTimeMillis() + 10);
+            sched = resultDescent.schedule;
             
             System.out.println("SCHEDULE:\n" + sched);
             System.out.println("VALID: " + sched.isValid());
-            System.out.println("MAKESPAN: " + sched.makespan());*/
+            System.out.println("MAKESPAN: " + sched.makespan());
             
+            System.out.println("---------------------------------------------\n");
+            System.out.println("Taboo Solver: [Executed with EST_LRPT]\n");
+            
+            TabooSolver solverTaboo = new TabooSolver(EST_LRPT, 50, 1000);            
+            Result resultTaboo = solverTaboo.solve(instance2, System.currentTimeMillis() + 10);
+            sched = resultTaboo.schedule;
+            /*
+            List<Block>criticalBlockList2 = solverTaboo.blocksOfCriticalPath(ro2);
+            for(Block b : criticalBlockList2) {
+            	System.out.println(b);
+            	for(Swap s : solverTaboo.neighbors(b)) {
+            		System.out.println(s);
+            	}
+            }
+            */
+            System.out.println("SCHEDULE:\n" + sched);
+            System.out.println("VALID: " + sched.isValid());
+            System.out.println("MAKESPAN: " + sched.makespan());
+
         } catch (IOException e) {
             e.printStackTrace();
             System.exit(1);

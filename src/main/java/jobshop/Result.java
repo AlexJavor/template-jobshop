@@ -1,8 +1,5 @@
 package jobshop;
 
-import java.util.Optional;
-
-@SuppressWarnings("unused")
 public class Result {
 
     public Result(Instance instance, Schedule schedule, ExitCause cause) {

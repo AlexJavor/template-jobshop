@@ -3,9 +3,9 @@ package jobshop.solvers;
 import java.util.ArrayList;
 
 import jobshop.*;
+import jobshop.Result.ExitCause;
 import jobshop.encodings.ResourceOrder;
 import jobshop.encodings.Task;
-import jobshop.solvers.GreedySolver.PriorityESTRule;
 
 public class GreedySolver implements Solver {
 	
@@ -100,12 +100,12 @@ public class GreedySolver implements Solver {
 			// Search for the date or dates which start sooner
 			ArrayList<Task> priorityTasks = new ArrayList<>();
 			int minStartDate = Integer.MAX_VALUE;
-
-			
+			Task currentTask;
+			int currentMachine, currentStartDate;
 			for(int i = 0; i < achievableTasks.size(); i++) {
-				Task currentTask = achievableTasks.get(i);
-				int currentMachine = instance.machine(currentTask.job, currentTask.task);
-				int currentStartDate = Integer.max(nextStartDateJobs[currentTask.job], nextStartDateMachines[currentMachine]);
+				currentTask = achievableTasks.get(i);
+				currentMachine = instance.machine(currentTask);
+				currentStartDate = Integer.max(nextStartDateJobs[currentTask.job], nextStartDateMachines[currentMachine]);
 						
 				if(currentStartDate < minStartDate) {
 					minStartDate = currentStartDate;
@@ -124,16 +124,18 @@ public class GreedySolver implements Solver {
 	/********************** Greedy Solver: Constructors + Solve function *************************/
 	/*********************************************************************************************/
 	
-	public PriorityRule priorityRule;
-	public PriorityESTRule priorityESTRule;
+	private PriorityRule priorityRule;
+	private PriorityESTRule priorityESTRule;
 	
 	// 2 constructors: the default and one with the EST restriction
 	public GreedySolver(PriorityRule rule) {
+		super();
 		this.priorityRule = rule;
 		this.priorityESTRule = null;
 	}
 	
 	public GreedySolver(PriorityESTRule ruleEST) {
+		super();
 		this.priorityESTRule = ruleEST;
 		this.priorityRule = null;
 	}
@@ -143,7 +145,7 @@ public class GreedySolver implements Solver {
 	@Override
     public Result solve(Instance instance, long deadline) {
 		
-		int currentMachine, currentDuration;
+		int currentMachine, currentDuration, currentStartDate, nextFreeSlot;
 		// We declare 2 arrays containing the updated moment the next task will start in a job and a machine respectively
 		int[] nextStartDateJobs = new int[instance.numJobs];
 		int[] nextStartDateMachines = new int[instance.numMachines];
@@ -152,14 +154,13 @@ public class GreedySolver implements Solver {
 		ResourceOrder solution = new ResourceOrder(instance);
 		// Array list with all the achievable current tasks
         ArrayList<Task> achievableTasks = new ArrayList<>();
-        
+      
         // Initialize the array list with all the first task achievable
 		for(int i = 0 ; i < instance.numJobs ; i++) {
-			Task currentTask = new Task(i, 0);
-			achievableTasks.add(currentTask);
+			achievableTasks.add(new Task(i, 0));
         }
 		
-        while(!achievableTasks.isEmpty()) {
+        while(!achievableTasks.isEmpty() && deadline > System.currentTimeMillis()) {
             // We take the task we should do now in function of the priority rule used
         	Task currentTask = null;
         	if(priorityESTRule == null) {
@@ -170,14 +171,16 @@ public class GreedySolver implements Solver {
         		System.out.printf("Error priorityRule and priorityRuleEST are null. You must give a value to one of them.");
         	}
         	
-        	// Updating starting dates
-			currentMachine = instance.machine(currentTask.job, currentTask.task);
-			currentDuration = instance.duration(currentTask.job, currentTask.task);
-			nextStartDateJobs[currentTask.job] += currentDuration;
-			nextStartDateMachines[currentMachine] += currentDuration;
-            
             // We remove the current task from the achievable tasks list
             achievableTasks.remove(currentTask);
+        	
+        	// Updating starting dates
+			currentMachine   = instance.machine(currentTask);
+			currentDuration  = instance.duration(currentTask);
+            currentStartDate = Integer.max(nextStartDateJobs[currentTask.job], nextStartDateMachines[currentMachine]);
+
+			nextStartDateJobs[currentTask.job]    = currentStartDate + currentDuration;
+			nextStartDateMachines[currentMachine] = currentStartDate + currentDuration;
             
             // If it's not the last task of the job, we update the array list with the new task
             if (currentTask.task < (instance.numTasks - 1)) {
@@ -185,10 +188,16 @@ public class GreedySolver implements Solver {
             }
             
             // We add the current task to the solution
-            int nextFreeSlot = solution.nextFreeSlot[currentMachine]++;
+            nextFreeSlot = solution.nextFreeSlot[currentMachine]++;
             solution.tasksByMachine[currentMachine][nextFreeSlot] = currentTask;
         }
-
-        return new Result(instance, solution.toSchedule(), Result.ExitCause.Blocked);
+    	// We find the exit cause in order to create the result we will return
+    	ExitCause exitCause = null;
+    	if(deadline <= System.currentTimeMillis()) {
+    		exitCause = ExitCause.Timeout;
+    	} else {
+    		exitCause = ExitCause.ProvedOptimal;
+    	}
+        return new Result(instance, solution.toSchedule(), exitCause);
     }
 }

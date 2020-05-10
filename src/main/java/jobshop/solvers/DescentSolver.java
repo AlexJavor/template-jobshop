@@ -2,15 +2,34 @@ package jobshop.solvers;
 
 import jobshop.Instance;
 import jobshop.Result;
+import jobshop.Result.ExitCause;
 import jobshop.Schedule;
 import jobshop.Solver;
 import jobshop.encodings.ResourceOrder;
 import jobshop.encodings.Task;
+import jobshop.solvers.GreedySolver.PriorityESTRule;
+import jobshop.solvers.GreedySolver.PriorityRule;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class DescentSolver implements Solver {
+	
+	private PriorityRule priorityRule;
+	private PriorityESTRule priorityESTRule;
+	
+	// 2 constructors: the default and one with the EST restriction
+	public DescentSolver(PriorityRule rule) {
+		super();
+		this.priorityRule = rule;
+		this.priorityESTRule = null;
+	}
+	
+	public DescentSolver(PriorityESTRule ruleEST) {
+		super();
+		this.priorityESTRule = ruleEST;
+		this.priorityRule = null;
+	}
 
     /** A block represents a subsequence of the critical path such that all tasks in it execute on the same machine.
      * This class identifies a block in a ResourceOrder representation.
@@ -24,7 +43,7 @@ public class DescentSolver implements Solver {
      * Represent the task sequence : [(0,2) (2,1)]
      *
      * */
-    public static class Block {
+	public static class Block {
         /** machine on which the block is identified */
         final int machine;
         /** index of the first task of the block */
@@ -78,7 +97,7 @@ public class DescentSolver implements Solver {
             // Retrieve the tasks to be swap
         	Task task1 = order.tasksByMachine[this.machine][this.t1];
             Task task2 = order.tasksByMachine[this.machine][this.t2];
-            // Make the swap
+            // Make the swap (default in/out)
             order.tasksByMachine[this.machine][this.t1] = task2;
             order.tasksByMachine[this.machine][this.t2] = task1;
         }
@@ -87,90 +106,142 @@ public class DescentSolver implements Solver {
         	return "Swap: {M" + this.machine + " | t1 = " + this.t1 + " | t2 = " + this.t2 + "}";
         }
     }
-
-
+    // ************************************************************************************************************* //
+    // *************************************** DescentSolver: solve Method ***************************************** //
+    // ************************************************************************************************************* //
     @Override
     public Result solve(Instance instance, long deadline) {
-        throw new UnsupportedOperationException();
+    	// Choosing rule (SPT / LRPT / EST_SPT / EST_LRPT)
+    	GreedySolver greedy = null;
+    	if(priorityESTRule == null) {
+    		PriorityRule currentRule = this.priorityRule;
+    		greedy = new GreedySolver(currentRule);
+    	} else if(priorityRule == null) {
+    		PriorityESTRule currentESTRule = this.priorityESTRule;
+    		greedy = new GreedySolver(currentESTRule);
+    	} else {
+    		System.out.printf("Error priorityRule and priorityRuleEST are null. You must give a value to one of them.");
+    	}
+    	
+        // Start: Sinit <- GreedySolver(instance)
+    	Result resultLRPT = greedy.solve(instance, deadline);
+    	Schedule initialSolution = resultLRPT.schedule;
+    	
+    	// Record the best solution
+    	Schedule bestSolution = initialSolution;
+    	ResourceOrder bestResourceOrder = new ResourceOrder(bestSolution);
+    	
+    	// Repeat: Explore the concurrent neighbors
+    	Boolean optimizable = true;
+    	Schedule currentSolution;
+    	ResourceOrder currentResourceOrder;
+    	List<Block> criticalBlockList;
+    	
+    	while(optimizable && deadline > System.currentTimeMillis()) {
+    		// We first take the critical path from the bestSolution
+        	bestResourceOrder = new ResourceOrder(bestSolution);
+        	criticalBlockList = this.blocksOfCriticalPath(bestResourceOrder);
+        	// By default we suppose there will be no optimization possible. If there is, this value will be later changed
+        	optimizable = false;
+        	// We search for the best solution by checking all neighbors
+        	for(Block b : criticalBlockList) {
+        		for(Swap s : this.neighbors(b)) {
+                	// We copy to a variable the bestResourceOrder in order to modified freely while searching for the best solution
+                	currentResourceOrder = bestResourceOrder.copy();
+        			// We apply the swap on the current Resource Order and we schedule it
+        			s.applyOn(currentResourceOrder);
+        			currentSolution = currentResourceOrder.toSchedule();
+        			// If the currentSolution duration is smaller than the bestSolution one, save the currentSolution
+        			if(currentSolution != null) {
+	        			if(currentSolution.makespan() < bestSolution.makespan()) {
+	        				bestSolution = currentSolution;
+	        				// While we find better solutions keep running the solve method
+	        				optimizable = true;
+	        			}
+        			}
+        		}
+        	}
+    	}
+    	// We find the exit cause in order to create the result we will return
+    	ExitCause exitCause = null;
+    	if(deadline <= System.currentTimeMillis()) {
+    		exitCause = ExitCause.Timeout;
+    	} else {
+    		exitCause = ExitCause.ProvedOptimal;
+    	}
+    	
+    	return new Result(instance, bestSolution, exitCause);
     }
-
+    
+    // ************************************************************************************************************* //
+    
+    
+    // ************************************************************************************************************* //
+    // ***************************** blocksOfCriticalPath and neighbors Methods ************************************ //
+    // ************************************************************************************************************* //
     /** Returns a list of all blocks of the critical path. */
     public List<Block> blocksOfCriticalPath(ResourceOrder order) {
     	List<Block> criticalBlockList = new ArrayList<>();
-    	List<Integer> checkedMachines = new ArrayList<>();
-    	
+    	Block currentBlock;
     	// Obtain the critical task list from the resource order instance
         Schedule criticalSchedule = order.toSchedule();
         List<Task> criticalTaskList = criticalSchedule.criticalPath();
         
-        Block currentBlock;
-        int currentMachine, m;
-        int firstTask = 0, lastTask = 0;
-        Task currentTask;
+        int totalNumMachines = criticalSchedule.pb.numMachines;
+        int totalNumJobs     = criticalSchedule.pb.numJobs;
         
-        System.out.print("Number of Jobs     : " + order.instance.numJobs + "\n");
-        System.out.print("Number of Tasks    : " + order.instance.numTasks + "\n");
-        System.out.print("Number of Machines : " + order.instance.numMachines + "\n");
-        System.out.print("Critical path      : " + criticalTaskList + "\n");
+        Task currentTaskRO;
+        int currentTaskIndexRO, currentCriticalTaskIndex, firstTask, lastTask;
         
-        // Initialize the block list
-        for(int i = 0; i < order.instance.numMachines; i++) {
-        	currentBlock = new Block(i, -1, -1);
-        	criticalBlockList.add(i, currentBlock);
-        }
-        
-        for(int i = 0; i < criticalTaskList.size(); i++) {
-        	currentTask = criticalTaskList.get(i);
-        	currentMachine = order.instance.machine(currentTask.job, currentTask.task);
-        	
-        	// When we find a machine we have not explored, we start searching for all its appearances in the critical path 
-        	// and we safe the first and last occurrence of the machine.  
-        	if(!checkedMachines.contains(currentMachine)) {
-        		firstTask = 0;
-                lastTask = 0;
-        		for(int index = i; index < criticalTaskList.size(); index++) {
-	        		m = order.instance.machine(criticalTaskList.get(index).job, criticalTaskList.get(index).task);
-	        		// If we find a task running in the same machine and it is not the first task, add 1 to the last task
-	        		if(currentMachine == m && index > i){
-	    				lastTask++;
-	        		}
-        		}
-            	// Add the machine to the checked machines list
-            	checkedMachines.add(currentMachine);
-            	// Create and add the new block to the list
-            	currentBlock = new Block(currentMachine, firstTask, lastTask);
-            	criticalBlockList.set(currentMachine, currentBlock);
-        	}
+        // We check for all machines
+        for(int currentMachine = 0; currentMachine < totalNumMachines; currentMachine++) {
+        	currentTaskIndexRO = 0;
+            while(currentTaskIndexRO < (totalNumJobs-1)){
+                currentTaskRO = order.tasksByMachine[currentMachine][currentTaskIndexRO];
+                if (criticalTaskList.contains(currentTaskRO)) {
+                    currentCriticalTaskIndex = criticalTaskList.indexOf(currentTaskRO);
+                    //If the next task in the critical path is running in the same machine try find the last task index
+                    if(currentMachine == criticalSchedule.pb.machine(criticalTaskList.get(currentCriticalTaskIndex+1))) {
+                        firstTask = currentTaskIndexRO;
+                        while(currentCriticalTaskIndex < (criticalTaskList.size()-1) && currentMachine == criticalSchedule.pb.machine(criticalTaskList.get(currentCriticalTaskIndex+1))){
+                        	// We advance in the list
+                            currentCriticalTaskIndex++;
+                            // We have to also advance in the resource order
+                            currentTaskIndexRO++;
+                        }
+                        // Create and add the new block to the list
+                        lastTask = currentTaskIndexRO;
+                	    currentBlock = new Block(currentMachine, firstTask, lastTask);
+                        criticalBlockList.add(currentBlock);
+                    }
+                }
+                // We move on to the next task in the resource order
+                currentTaskIndexRO++;
+            }
         }
         return criticalBlockList;
-    }
-    
+     }
 
-    /** For a given block, return the possible swaps for the Nowicki and Smutnicki neighborhood */
-    public List<Swap> neighbors(Block block) {
+     /** For a given block, return the possible swaps for the Nowicki and Smutnicki neighborhood */
+     public List<Swap> neighbors(Block block) {
     	List<Swap> swapList = new ArrayList<>();
-    	Swap currentSwap;
+    	Swap swap1, swap2;
     	
     	int machine   = block.machine;
     	int firstTask = block.firstTask;
     	int lastTask  = block.lastTask;
     	
-    	// Case when there is just one element in the block
-    	if(firstTask == lastTask) {
-    		swapList = null;
-    	}
-    	
-     	for(int i = firstTask; i < lastTask; i++) {
-     		if(i == firstTask + 1) {
-     			currentSwap = new Swap(machine, firstTask, i);
-     			swapList.add(currentSwap);
-     		}
-     		if (i == lastTask - 1) {
-     			currentSwap = new Swap(machine, i, lastTask);
-     			swapList.add(currentSwap);
-     		}
-    	}
+    	// One single swap if there are just 2 elements in the block, two swaps if there are more than 2.
+ 		if(firstTask + 1 == lastTask) {
+ 			swap1 = new Swap(machine, firstTask, lastTask);
+ 			swapList.add(swap1);
+ 		} else {
+ 			swap1 = new Swap(machine, firstTask, firstTask+1);
+ 			swap2 = new Swap(machine, lastTask-1 , lastTask);
+ 			swapList.add(swap1);
+ 			swapList.add(swap2);
+ 		}
         return swapList;
-    }
-
+     }   
+     // ************************************************************************************************************* //
 }
