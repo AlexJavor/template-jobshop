@@ -88,7 +88,7 @@ public class TabooSolver implements Solver {
     	// Iteration Counter
     	int k = 0;
 
-        while (deadline > System.currentTimeMillis() && k <= this.maxIter) {
+        while (/*deadline > System.currentTimeMillis() &&*/ k <= this.maxIter) {
         	// ***************** 1. k <- k + 1 ******************************************************** //
             k++;
             

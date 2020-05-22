@@ -20,21 +20,29 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
 	// ******************************************** Main - Arguments ************************************************ //
+	// All instances
+	// --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09 la10 la11 la12 la13 la14 la15 la16 la17 la18 la19 la20 la21 la22 la23 la24 la25 la26 la27 la28 la29 la30 la31 la32 la33 la34 la35 la36 la37 la38 la39 la40
+	// --instance ft06 ft10 ft20 la01 la06 la11 la16 la21 la26 la31 la36
+
 	// *** Basic + Random *** //
-	// --solver basic random --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
-	
+	// --solver basic random
+
 	// *** Greedy Solvers *** // 
-	// --solver Greedy-SPT Greedy-LRPT Greedy-EST_SPT Greedy-EST_LRPT --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
+	// --solver Greedy-SPT Greedy-LRPT Greedy-EST_SPT Greedy-EST_LRPT
 	
 	// *** Descent Solvers *** //
-	// --solver Descent-SPT Descent-LRPT Descent-EST_SPT Descent-EST_LRPT --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
+	// --solver Descent-SPT Descent-LRPT Descent-EST_SPT Descent-EST_LRPT
 	
 	// *** Taboo Solvers *** //
-	// --solver Taboo-EST_LRPT(1,1) --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
-	// --solver Taboo-EST_LRPT(1,10) Taboo-EST_LRPT(2,10) Taboo-EST_LRPT(3,10) Taboo-EST_LRPT(4,10) Taboo-EST_LRPT(5,10) Taboo-EST_LRPT(6,10) Taboo-EST_LRPT(7,10) Taboo-EST_LRPT(8,10) Taboo-EST_LRPT(9,10) Taboo-EST_LRPT(10,10) --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
-	// --solver Taboo-EST_LRPT(1,100) Taboo-EST_LRPT(6,100) Taboo-EST_LRPT(8,100) Taboo-EST_LRPT(10,100) Taboo-EST_LRPT(12,100) Taboo-EST_LRPT(14,100) Taboo-EST_LRPT(20,100) Taboo-EST_LRPT(50,100) Taboo-EST_LRPT(100,100) --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
-	// --solver Taboo-EST_LRPT(1,1000) Taboo-EST_LRPT(6,1000) Taboo-EST_LRPT(8,1000) Taboo-EST_LRPT(10,1000) Taboo-EST_LRPT(12,1000) Taboo-EST_LRPT(14,1000) Taboo-EST_LRPT(20,1000) Taboo-EST_LRPT(50,1000) Taboo-EST_LRPT(100,1000) --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
-	// --solver Taboo-EST_LRPT(1,5000) Taboo-EST_LRPT(6,5000) Taboo-EST_LRPT(8,5000) Taboo-EST_LRPT(10,5000) Taboo-EST_LRPT(12,5000) Taboo-EST_LRPT(14,5000) Taboo-EST_LRPT(20,5000) Taboo-EST_LRPT(50,5000) Taboo-EST_LRPT(100,5000) --instance aaa1 ft06 ft10 ft20 la01 la02 la03 la04 la05 la06 la07 la08 la09
+	// --solver Taboo-EST_LRPT(1,1)
+	// --solver Taboo-EST_LRPT(1,10) Taboo-EST_LRPT(2,10) Taboo-EST_LRPT(5,10) Taboo-EST_LRPT(10,10)
+	// --solver Taboo-EST_LRPT(1,100) Taboo-EST_LRPT(6,100) Taboo-EST_LRPT(8,100) Taboo-EST_LRPT(10,100) Taboo-EST_LRPT(12,100) Taboo-EST_LRPT(14,100) Taboo-EST_LRPT(20,100) Taboo-EST_LRPT(50,100) Taboo-EST_LRPT(100,100)
+	// --solver Taboo-EST_LRPT(1,1000) Taboo-EST_LRPT(6,1000) Taboo-EST_LRPT(8,1000) Taboo-EST_LRPT(10,1000) Taboo-EST_LRPT(12,1000) Taboo-EST_LRPT(14,1000) Taboo-EST_LRPT(20,1000) Taboo-EST_LRPT(50,1000) Taboo-EST_LRPT(100,1000) 
+	// --solver Taboo-EST_LRPT(1,5000) Taboo-EST_LRPT(6,5000) Taboo-EST_LRPT(8,5000) Taboo-EST_LRPT(10,5000) Taboo-EST_LRPT(12,5000) Taboo-EST_LRPT(14,5000) Taboo-EST_LRPT(20,5000) Taboo-EST_LRPT(50,5000) Taboo-EST_LRPT(100,5000)
+	
+	// *** Method comparison *** //
+	// --solver Greedy-SPT Descent-SPT Taboo-SPT(10,5000)
+	// --solver Greedy-LRPT Descent-LRPT Taboo-LRPT(10,5000)
 	
 	/** All solvers available in this program */
     private static HashMap<String, Solver> solvers;
@@ -64,13 +72,7 @@ public class Main {
         
         solvers.put("Taboo-EST_LRPT(1,10)",  new TabooSolver(EST_LRPT, 1, 10));
         solvers.put("Taboo-EST_LRPT(2,10)",  new TabooSolver(EST_LRPT, 2, 10));
-        solvers.put("Taboo-EST_LRPT(3,10)",  new TabooSolver(EST_LRPT, 3, 10));
-        solvers.put("Taboo-EST_LRPT(4,10)",  new TabooSolver(EST_LRPT, 4, 10));
         solvers.put("Taboo-EST_LRPT(5,10)",  new TabooSolver(EST_LRPT, 5, 10));
-        solvers.put("Taboo-EST_LRPT(6,10)",  new TabooSolver(EST_LRPT, 6, 10));
-        solvers.put("Taboo-EST_LRPT(7,10)",  new TabooSolver(EST_LRPT, 7, 10));
-        solvers.put("Taboo-EST_LRPT(8,10)",  new TabooSolver(EST_LRPT, 8, 10));
-        solvers.put("Taboo-EST_LRPT(9,10)",  new TabooSolver(EST_LRPT, 9, 10));
         solvers.put("Taboo-EST_LRPT(10,10)", new TabooSolver(EST_LRPT, 10, 10));
         
         solvers.put("Taboo-EST_LRPT(1,100)",   new TabooSolver(EST_LRPT, 1, 100));
@@ -101,7 +103,22 @@ public class Main {
         solvers.put("Taboo-EST_LRPT(14,5000)",  new TabooSolver(EST_LRPT, 14, 5000));
         solvers.put("Taboo-EST_LRPT(20,5000)",  new TabooSolver(EST_LRPT, 20, 5000));
         solvers.put("Taboo-EST_LRPT(50,5000)",  new TabooSolver(EST_LRPT, 50, 5000));
-        solvers.put("Taboo-EST_LRPT(100,5000)", new TabooSolver(EST_LRPT, 100, 5000));     
+        solvers.put("Taboo-EST_LRPT(100,5000)", new TabooSolver(EST_LRPT, 100, 5000));
+        
+        solvers.put("Taboo-EST_LRPT(10,12000)", new TabooSolver(EST_LRPT, 10, 12000));
+        solvers.put("Taboo-EST_LRPT(14,12000)", new TabooSolver(EST_LRPT, 14, 12000));
+        
+        solvers.put("Taboo-EST_LRPT(10,2000)", new TabooSolver(EST_LRPT, 10, 2000));
+        solvers.put("Taboo-EST_LRPT(10,4000)", new TabooSolver(EST_LRPT, 10, 4000));
+        solvers.put("Taboo-EST_LRPT(10,6000)", new TabooSolver(EST_LRPT, 10, 6000));
+        solvers.put("Taboo-EST_LRPT(10,8000)", new TabooSolver(EST_LRPT, 10, 8000));
+        solvers.put("Taboo-EST_LRPT(10,10000)", new TabooSolver(EST_LRPT, 10, 10000));
+        solvers.put("Taboo-EST_LRPT(10,12000)", new TabooSolver(EST_LRPT, 10, 12000));
+        solvers.put("Taboo-EST_LRPT(10,14000)", new TabooSolver(EST_LRPT, 10, 14000));
+        
+        solvers.put("Taboo-SPT(10,1000)",  new TabooSolver(SPT, 10, 1000));
+        solvers.put("Taboo-LRPT(10,1000)",  new TabooSolver(LRPT, 10, 1000));
+        solvers.put("Taboo-EST_SPT(10,1000)",  new TabooSolver(EST_SPT, 10, 1000));
     }
 
 

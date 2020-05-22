@@ -151,7 +151,7 @@ public class GreedySolver implements Solver {
 		int[] nextStartDateMachines = new int[instance.numMachines];
 		
 		// We create a new ResourceOrder for putting all tasks in the schedule
-		ResourceOrder solution = new ResourceOrder(instance);
+		ResourceOrder solutionRO = new ResourceOrder(instance);
 		// Array list with all the achievable current tasks
         ArrayList<Task> achievableTasks = new ArrayList<>();
       
@@ -188,16 +188,16 @@ public class GreedySolver implements Solver {
             }
             
             // We add the current task to the solution
-            nextFreeSlot = solution.nextFreeSlot[currentMachine]++;
-            solution.tasksByMachine[currentMachine][nextFreeSlot] = currentTask;
+            nextFreeSlot = solutionRO.nextFreeSlot[currentMachine]++;
+            solutionRO.tasksByMachine[currentMachine][nextFreeSlot] = currentTask;
         }
     	// We find the exit cause in order to create the result we will return
     	ExitCause exitCause = null;
     	if(deadline <= System.currentTimeMillis()) {
     		exitCause = ExitCause.Timeout;
     	} else {
-    		exitCause = ExitCause.ProvedOptimal;
+    		exitCause = ExitCause.Blocked;
     	}
-        return new Result(instance, solution.toSchedule(), exitCause);
+        return new Result(instance, solutionRO.toSchedule(), exitCause);
     }
 }

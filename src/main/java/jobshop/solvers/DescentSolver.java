@@ -124,8 +124,8 @@ public class DescentSolver implements Solver {
     	}
     	
         // Start: Sinit <- GreedySolver(instance)
-    	Result resultLRPT = greedy.solve(instance, deadline);
-    	Schedule initialSolution = resultLRPT.schedule;
+    	Result result = greedy.solve(instance, deadline);
+    	Schedule initialSolution = result.schedule;
     	
     	// Record the best solution
     	Schedule bestSolution = initialSolution;
@@ -167,7 +167,7 @@ public class DescentSolver implements Solver {
     	if(deadline <= System.currentTimeMillis()) {
     		exitCause = ExitCause.Timeout;
     	} else {
-    		exitCause = ExitCause.ProvedOptimal;
+    		exitCause = ExitCause.Blocked;
     	}
     	
     	return new Result(instance, bestSolution, exitCause);
